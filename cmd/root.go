@@ -54,15 +54,19 @@ func init() {
 }
 
 func runRootCmd(cmd *cobra.Command, args []string) {
+	// Prepare UI
+	ui, err := ui.NewUI(cliLog)
+	if err != nil {
+		cliLog.Fatal().Err(err).Msg("NewUI failed")
+	}
+
+	// Prepare service
 	svc, err := service.NewService(rootArgs.service, service.Dependencies{
-		Log: cliLog,
+		Log:               cliLog,
+		DiscoveryListener: ui,
 	})
 	if err != nil {
 		cliLog.Fatal().Err(err).Msg("NewService failed")
-	}
-	ui, err := ui.NewUI()
-	if err != nil {
-		cliLog.Fatal().Err(err).Msg("NewUI failed")
 	}
 	// Run service
 	ctx := context.Background()
