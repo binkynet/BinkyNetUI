@@ -20,8 +20,6 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
-	"golang.org/x/sync/errgroup"
-	"gioui.org/app"
 
 	"github.com/binkynet/BinkyNetUI/service"
 	"github.com/binkynet/BinkyNetUI/ui"
@@ -66,14 +64,14 @@ func runRootCmd(cmd *cobra.Command, args []string) {
 	if err != nil {
 		cliLog.Fatal().Err(err).Msg("NewUI failed")
 	}
-	g, ctx := errgroup.WithContext(context.Background())
-	g.Go(func() error { return svc.Run(ctx) })
-	g.Go(func() error { return ui.Run(ctx) })
+	// Run service
+	ctx := context.Background()
 	go func() {
-	if err := g.Wait(); err != nil {
-		cliLog.Fatal().Err(err).Msg("Run failed")
+		if err := svc.Run(ctx); err != nil {
+			cliLog.Fatal().Err(err).Msg("Run Service failed")
+		}
+	}()
+	if err := ui.Run(ctx); err != nil {
+		cliLog.Fatal().Err(err).Msg("Run UI failed")
 	}
-}()
-
-	app.Main()
 }

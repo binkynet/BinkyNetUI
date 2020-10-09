@@ -3,14 +3,11 @@ ROOTDIR := $(shell pwd)
 VERSION := $(shell cat VERSION)
 COMMIT := $(shell git rev-parse --short HEAD)
 
-ORGPATH := github.com/binkynet
-REPONAME := $(PROJECT)
-REPOPATH := $(ORGPATH)/$(REPONAME)
 BINNAME := bnUI
 
 SOURCES := $(shell find . -name '*.go')
 
-.PHONY: all clean deps bootstrap binaries test
+.PHONY: all clean deps bootstrap binaries package test
 
 all: binaries
 
@@ -18,15 +15,17 @@ clean:
 	rm -Rf $(ROOTDIR)/bin
 
 bootstrap:
-	go get github.com/mitchellh/gox
+	GO111MODULE=on go get github.com/lucor/fyne-cross/v2/cmd/fyne-cross
 
 binaries: $(SOURCES)
-	gox \
-		-osarch="darwin/amd64 windows/amd64" \
+	mkdir -p bin
+	CGO_ENABLED=1 go build \
+		-o ./bin/$(BINNAME) \
 		-ldflags="-X main.projectVersion=$(VERSION) -X main.projectBuild=$(COMMIT)" \
-		-output="bin/{{.OS}}/{{.Arch}}/$(BINNAME)" \
-		-tags="netgo" \
-		./...
+		github.com/binkynet/BinkyNetUI
+
+package:
+	fyne-cross darwin
 
 test:
 	go test ./...

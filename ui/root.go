@@ -7,50 +7,36 @@ package ui
 
 import (
 	"context"
+	"image/color"
 
-	"gioui.org/app"
-	"gioui.org/font/gofont"
-	"gioui.org/io/system"
-	"gioui.org/layout"
-	"gioui.org/op"
-	"gioui.org/widget/material"
+	"fyne.io/fyne"
+	"fyne.io/fyne/app"
+	"fyne.io/fyne/canvas"
+	"fyne.io/fyne/layout"
 )
 
 type UI struct {
-	theme *material.Theme
 }
 
 // NewUI initialize a new UI
 func NewUI() (*UI, error) {
-	ui := &UI{
-		theme: material.NewTheme(gofont.Collection()),
-	}
+	ui := &UI{}
 	return ui, nil
 }
 
 // Run until the given context is canceled
 func (ui *UI) Run(ctx context.Context) error {
-	w := app.NewWindow()
-	var ops op.Ops
+	myApp := app.New()
+	myWindow := myApp.NewWindow("Form Layout")
 
-	for {
-		select {
-		case <-ctx.Done():
-			// Context canceled
-		case e := <-w.Events():
-			switch e := e.(type) {
-			case system.DestroyEvent:
-				return e.Err
-			case system.FrameEvent:
-				gtx := layout.NewContext(&ops, e)
-				ui.layout(gtx)
-				e.Frame(gtx.Ops)
-			}
-		}
-	}
+	label1 := canvas.NewText("Label 1", color.Black)
+	value1 := canvas.NewText("Value", color.White)
+	label2 := canvas.NewText("Label 2", color.Black)
+	value2 := canvas.NewText("Something", color.White)
+	grid := fyne.NewContainerWithLayout(layout.NewFormLayout(),
+		label1, value1, label2, value2)
+	myWindow.SetContent(grid)
+	myWindow.ShowAndRun()
 
-}
-
-func (ui *UI) layout(gtx layout.Context) {
-	material.H1(ui.theme, "Hello Binky")
+	return nil
 }

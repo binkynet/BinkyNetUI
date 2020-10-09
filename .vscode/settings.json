@@ -1,4 +1,3 @@
 {
-    "git.ignoreLimitWarning": true,
-    "go.gopath": "${workspaceRoot}/.gobuild"
+    "git.ignoreLimitWarning": true
 }
