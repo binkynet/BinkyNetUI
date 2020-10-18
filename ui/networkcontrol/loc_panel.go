@@ -15,26 +15,34 @@
 // Author Ewout Prangsma
 //
 
-package ui
+package networkcontrol
 
 import (
-	"fmt"
+	"context"
 	"image/color"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
-	"fyne.io/fyne/layout"
+	"fyne.io/fyne/widget"
+	"github.com/rs/zerolog"
+
+	api "github.com/binkynet/BinkyNet/apis/v1"
 )
 
-func NewSearchingServicePage(title string) fyne.CanvasObject {
-	circle := canvas.NewCircle(color.White)
-	circle.StrokeColor = color.Gray{0x99}
-	circle.StrokeWidth = 5
-	circle.Resize(fyne.Size{200, 300})
+type locPanel struct {
+	widget.Box
 
-	lb := canvas.NewText(fmt.Sprintf("Searching for %s services...", title), color.RGBA{255, 0, 0, 128})
+	lbName *canvas.Text
 
-	c := fyne.NewContainerWithLayout(layout.NewMaxLayout(), circle, fyne.NewContainerWithLayout(layout.NewCenterLayout(), lb))
+	requests chan bool
+}
 
-	return c
+func NewLocPanel(ctx context.Context, log zerolog.Logger, apic api.NetworkControlServiceClient) fyne.CanvasObject {
+	p := &locPanel{
+		lbName:   canvas.NewText("Name", color.RGBA{0, 0, 255, 255}),
+		requests: make(chan bool, 8),
+	}
+	p.Box = *widget.NewVBox(p.lbName)
+
+	return p
 }

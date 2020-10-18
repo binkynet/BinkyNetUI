@@ -15,26 +15,29 @@
 // Author Ewout Prangsma
 //
 
-package ui
+package commandstation
 
 import (
-	"fmt"
-	"image/color"
+	"context"
 
 	"fyne.io/fyne"
-	"fyne.io/fyne/canvas"
-	"fyne.io/fyne/layout"
+	"fyne.io/fyne/widget"
+
+	api "github.com/binkynet/BinkyNet/apis/v1"
+	"github.com/rs/zerolog"
 )
 
-func NewSearchingServicePage(title string) fyne.CanvasObject {
-	circle := canvas.NewCircle(color.White)
-	circle.StrokeColor = color.Gray{0x99}
-	circle.StrokeWidth = 5
-	circle.Resize(fyne.Size{200, 300})
-
-	lb := canvas.NewText(fmt.Sprintf("Searching for %s services...", title), color.RGBA{255, 0, 0, 128})
-
-	c := fyne.NewContainerWithLayout(layout.NewMaxLayout(), circle, fyne.NewContainerWithLayout(layout.NewCenterLayout(), lb))
-
-	return c
+// NewMainPage constructs a new main UI page.
+func NewMainPage(ctx context.Context, log zerolog.Logger, apic api.CommandStationServiceClient) fyne.CanvasObject {
+	powerPanel, powerItems := NewPowerPanel(ctx, log, apic)
+	locsPanel, locsItems := NewLocsPanel(ctx, log, apic)
+	toolbar := widget.NewToolbar(
+		append(powerItems, locsItems...)...,
+	)
+	return widget.NewVBox(toolbar,
+		widget.NewTabContainer(
+			widget.NewTabItem("Power", powerPanel),
+			widget.NewTabItem("Locs", locsPanel),
+		),
+	)
 }

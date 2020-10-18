@@ -55,7 +55,8 @@ func init() {
 
 func runRootCmd(cmd *cobra.Command, args []string) {
 	// Prepare UI
-	ui, err := ui.NewUI(cliLog)
+	ctx := context.Background()
+	ui, err := ui.NewUI(ctx, cliLog)
 	if err != nil {
 		cliLog.Fatal().Err(err).Msg("NewUI failed")
 	}
@@ -69,7 +70,6 @@ func runRootCmd(cmd *cobra.Command, args []string) {
 		cliLog.Fatal().Err(err).Msg("NewService failed")
 	}
 	// Run service
-	ctx := context.Background()
 	go func() {
 		if err := svc.Run(ctx); err != nil {
 			cliLog.Fatal().Err(err).Msg("Run Service failed")

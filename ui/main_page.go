@@ -20,24 +20,44 @@ package ui
 import (
 	"context"
 
-	"fyne.io/fyne"
 	"fyne.io/fyne/widget"
+	"github.com/rs/zerolog"
 
 	api "github.com/binkynet/BinkyNet/apis/v1"
-	"github.com/rs/zerolog"
+	"github.com/binkynet/BinkyNetUI/ui/commandstation"
+	"github.com/binkynet/BinkyNetUI/ui/networkcontrol"
 )
 
 type mainPage struct {
-	widget.Box
+	log  zerolog.Logger
+	Root *widget.TabContainer
+	tabs []*widget.TabItem
 }
 
 // NewMainPage constructs a new main UI page.
-func NewMainPage(ctx context.Context, log zerolog.Logger, apic api.NetworkControlServiceClient) fyne.CanvasObject {
-	powerPanel, powerItems := NewPowerPanel(ctx, log, apic)
-	toolbar := widget.NewToolbar(
-		powerItems...,
-	)
-	return &mainPage{
-		Box: *widget.NewVBox(toolbar, powerPanel),
+func NewMainPage(ctx context.Context, log zerolog.Logger) *mainPage {
+	tabs := []*widget.TabItem{
+		widget.NewTabItem("Network control", NewSearchingServicePage("network control")),
+		widget.NewTabItem("Command station", NewSearchingServicePage("command station")),
 	}
+	tc := widget.NewTabContainer(tabs...)
+	return &mainPage{
+		log:  log,
+		Root: tc,
+		tabs: tabs,
+	}
+}
+
+// CommandStationChanged is called when a new CommandStation service is detected.
+func (m *mainPage) CommandStationChanged(ctx context.Context, apic api.CommandStationServiceClient) {
+	m.tabs[1].Content = commandstation.NewMainPage(ctx, m.log, apic)
+	m.Root.Refresh()
+	m.Root.SelectTabIndex(1)
+}
+
+// NetworkControlChanged is called when a new NetworkControl service is detected.
+func (m *mainPage) NetworkControlChanged(ctx context.Context, apic api.NetworkControlServiceClient) {
+	m.tabs[0].Content = networkcontrol.NewMainPage(ctx, m.log, apic)
+	m.Root.Refresh()
+	m.Root.SelectTabIndex(0)
 }

@@ -34,7 +34,8 @@ type Service interface {
 
 // DiscoveryListener is informed when certain discovery events happen.
 type DiscoveryListener interface {
-	NetworkControlChanged(ctx context.Context, api api.NetworkControlServiceClient)
+	CommandStationChanged(ctx context.Context, apic api.CommandStationServiceClient)
+	NetworkControlChanged(ctx context.Context, apic api.NetworkControlServiceClient)
 }
 
 type Config struct {
@@ -54,8 +55,10 @@ type service struct {
 	discoveryListener DiscoveryListener
 	Config
 
-	nwCtrlListener *discovery.ServiceListener
-	nwCtrlChanges  chan api.ServiceInfo
+	cmdStatListener *discovery.ServiceListener
+	cmdStatChanges  chan api.ServiceInfo
+	nwCtrlListener  *discovery.ServiceListener
+	nwCtrlChanges   chan api.ServiceInfo
 }
 
 // NewService creates a Service instance and returns it.
@@ -66,6 +69,8 @@ func NewService(conf Config, deps Dependencies) (Service, error) {
 		discoveryListener: deps.DiscoveryListener,
 		Config:            conf,
 	}
+	s.cmdStatChanges = make(chan api.ServiceInfo, 8)
+	s.cmdStatListener = discovery.NewServiceListener(log, api.ServiceTypeCommandStation, true, s.onCommandStationChanged)
 	s.nwCtrlChanges = make(chan api.ServiceInfo, 8)
 	s.nwCtrlListener = discovery.NewServiceListener(log, api.ServiceTypeNetworkControl, true, s.onNetworkControlChanged)
 	return s, nil
@@ -79,6 +84,7 @@ func (s *service) Run(ctx context.Context) error {
 	}()
 
 	g, ctx := errgroup.WithContext(ctx)
+	g.Go(func() error { return s.cmdStatListener.Run(ctx) })
 	g.Go(func() error { return s.nwCtrlListener.Run(ctx) })
 	g.Go(func() error { return s.run(ctx) })
 
@@ -87,13 +93,29 @@ func (s *service) Run(ctx context.Context) error {
 
 // run the actual service
 func (s *service) run(ctx context.Context) error {
+	var cmdStatConn grpcConn
 	var nwCtrlConn grpcConn
 	for {
 		select {
 		case <-ctx.Done():
 			// Context canceled
+			cmdStatConn.Close()
 			nwCtrlConn.Close()
 			return nil
+		case info := <-s.cmdStatChanges:
+			log := s.log.With().
+				Str("address", info.GetApiAddress()).
+				Logger()
+			log.Debug().Msg("CommandStation service changed")
+			conn, err := dialConn(&info)
+			if err != nil {
+				log.Warn().Err(err).Msg("Dialing CommandStation failed")
+				continue
+			}
+			cmdStatConn.Close()
+			cmdStatConn.SetConn(ctx, conn)
+			cmdStatAPI := api.NewCommandStationServiceClient(conn)
+			s.discoveryListener.CommandStationChanged(cmdStatConn.ctx, cmdStatAPI)
 		case info := <-s.nwCtrlChanges:
 			log := s.log.With().
 				Str("address", info.GetApiAddress()).
@@ -110,6 +132,11 @@ func (s *service) run(ctx context.Context) error {
 			s.discoveryListener.NetworkControlChanged(nwCtrlConn.ctx, nwCtrlAPI)
 		}
 	}
+}
+
+// CommandStation service has changed
+func (s *service) onCommandStationChanged(info api.ServiceInfo) {
+	s.cmdStatChanges <- info
 }
 
 // NetworkControl service has changed

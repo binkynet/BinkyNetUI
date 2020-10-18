@@ -15,7 +15,7 @@
 // Author Ewout Prangsma
 //
 
-package ui
+package networkcontrol
 
 import (
 	"context"
@@ -33,8 +33,6 @@ import (
 )
 
 type powerPanel struct {
-	widget.Box
-
 	lbPowerIsUnknown *canvas.Text
 	lbPowerIsOff     *canvas.Text
 	lbPowerIsOn      *canvas.Text
@@ -72,11 +70,11 @@ func NewPowerPanel(ctx context.Context, log zerolog.Logger, apic api.NetworkCont
 	})
 	p.updateState(false, false, true)
 
-	p.Box = *widget.NewVBox(p.lbPowerIsUnknown, p.lbPowerIsOff, p.lbPowerIsOn, p.lbPowerGoingOff, p.lbPowerGoingOn, p.butPowerOff, p.butPowerOn)
+	box := widget.NewVBox(p.lbPowerIsUnknown, p.lbPowerIsOff, p.lbPowerIsOn, p.lbPowerGoingOff, p.lbPowerGoingOn, p.butPowerOff, p.butPowerOn)
 
 	go p.run(ctx, log, apic)
 
-	return p, []widget.ToolbarItem{p.tbbPowerOn, p.tbbPowerOff}
+	return box, []widget.ToolbarItem{p.tbbPowerOn, p.tbbPowerOff}
 }
 
 func (p *powerPanel) updateState(requested, actual, unknown bool) {

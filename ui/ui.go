@@ -31,19 +31,22 @@ type UI struct {
 	log        zerolog.Logger
 	app        fyne.App
 	mainWindow fyne.Window
+	mainPage   *mainPage
 }
 
 // NewUI initialize a new UI
-func NewUI(log zerolog.Logger) (*UI, error) {
+func NewUI(ctx context.Context, log zerolog.Logger) (*UI, error) {
 	a := app.New()
+	mainPage := NewMainPage(ctx, log)
 	mainWindow := a.NewWindow("BinkyNet")
-	mainWindow.SetContent(NewSearchingServicePage())
+	mainWindow.SetContent(mainPage.Root)
 	mainWindow.Resize(fyne.NewSize(800, 600))
 
 	ui := &UI{
 		log:        log,
 		app:        a,
 		mainWindow: mainWindow,
+		mainPage:   mainPage,
 	}
 	return ui, nil
 }
@@ -55,7 +58,12 @@ func (ui *UI) Run(ctx context.Context) error {
 	return nil
 }
 
+// CommandStationChanged is called when a new CommandStation service is detected.
+func (ui *UI) CommandStationChanged(ctx context.Context, apic api.CommandStationServiceClient) {
+	ui.mainPage.CommandStationChanged(ctx, apic)
+}
+
 // NetworkControlChanged is called when a new NetworkControl service is detected.
 func (ui *UI) NetworkControlChanged(ctx context.Context, apic api.NetworkControlServiceClient) {
-	ui.mainWindow.SetContent(NewMainPage(ctx, ui.log, apic))
+	ui.mainPage.NetworkControlChanged(ctx, apic)
 }
