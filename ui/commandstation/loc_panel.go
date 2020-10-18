@@ -44,6 +44,7 @@ type locPanel struct {
 	speed      int
 	speedSteps int32
 	direction  api.LocDirection
+	light      bool
 }
 
 func NewLocPanel(ctx context.Context, log zerolog.Logger, apic api.CommandStationServiceClient) fyne.CanvasObject {
@@ -56,6 +57,7 @@ func NewLocPanel(ctx context.Context, log zerolog.Logger, apic api.CommandStatio
 		speed:      0,
 		speedSteps: 128,
 		direction:  api.LocDirection_FORWARD,
+		light:      true,
 	}
 	p.tbAddress.OnChanged = p.onAddressChanged
 	p.tbAddress.SetText("3")
@@ -68,7 +70,11 @@ func NewLocPanel(ctx context.Context, log zerolog.Logger, apic api.CommandStatio
 		}
 	})
 	chDirection.SetSelected("Forward")
-	p.Box = *widget.NewVBox(p.lbName, p.tbAddress, p.slSpeed, chDirection)
+	cbLight := widget.NewCheck("Light", func(value bool) {
+		p.light = value
+		p.sendRequest()
+	})
+	p.Box = *widget.NewVBox(p.lbName, p.tbAddress, p.slSpeed, chDirection, cbLight)
 
 	go p.run(ctx, log, apic)
 
@@ -82,6 +88,9 @@ func (p *locPanel) sendRequest() {
 			Speed:      int32(p.speed),
 			SpeedSteps: p.speedSteps,
 			Direction:  p.direction,
+			Functions: map[int32]bool{
+				0: p.light,
+			},
 		},
 	}
 }
