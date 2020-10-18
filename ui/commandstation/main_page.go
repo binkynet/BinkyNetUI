@@ -30,14 +30,9 @@ import (
 // NewMainPage constructs a new main UI page.
 func NewMainPage(ctx context.Context, log zerolog.Logger, apic api.CommandStationServiceClient) fyne.CanvasObject {
 	powerPanel, powerItems := NewPowerPanel(ctx, log, apic)
-	locsPanel, locsItems := NewLocsPanel(ctx, log, apic)
+	locPanel := NewLocPanel(ctx, log, apic)
 	toolbar := widget.NewToolbar(
-		append(powerItems, locsItems...)...,
+		append(powerItems)...,
 	)
-	return widget.NewVBox(toolbar,
-		widget.NewTabContainer(
-			widget.NewTabItem("Power", powerPanel),
-			widget.NewTabItem("Locs", locsPanel),
-		),
-	)
+	return widget.NewVBox(toolbar, powerPanel, locPanel)
 }
